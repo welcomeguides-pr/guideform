@@ -652,10 +652,16 @@
 
       <div class="field">
         <label>¿Tienes logo de tu propiedad?</label>
-        <div class="radio-tabs">
-          <label><input type="radio" name="has_logo" value="si"> <span>Sí, voy a subir uno</span></label>
-          <label><input type="radio" name="has_logo" value="no"> <span>No, usar texto</span></label>
-          <label><input type="radio" name="has_logo" value="texto_icono"> <span>Texto + ícono emoji</span></label>
+        <div style="display:flex; flex-wrap:wrap; gap:14px; margin-top:6px;">
+          <label style="display:flex; align-items:center; gap:6px; font-size:13.5px; color:var(--text); cursor:pointer; font-weight:400;">
+            <input type="radio" name="has_logo" value="si" style="accent-color:var(--teal); width:15px; height:15px; flex-shrink:0;"> Sí, voy a subir uno
+          </label>
+          <label style="display:flex; align-items:center; gap:6px; font-size:13.5px; color:var(--text); cursor:pointer; font-weight:400;">
+            <input type="radio" name="has_logo" value="no" style="accent-color:var(--teal); width:15px; height:15px; flex-shrink:0;"> No, usar texto
+          </label>
+          <label style="display:flex; align-items:center; gap:6px; font-size:13.5px; color:var(--text); cursor:pointer; font-weight:400;">
+            <input type="radio" name="has_logo" value="texto_icono" style="accent-color:var(--teal); width:15px; height:15px; flex-shrink:0;"> Texto + ícono emoji
+          </label>
         </div>
       </div>
 
@@ -735,13 +741,16 @@
     });
   });
 
-  // ===== FORM SUBMIT =====
-  document.getElementById('wgForm').addEventListener('submit', function(e) {
+  // ===== FORM SUBMIT WITH FORMSPREE =====
+  document.getElementById('wgForm').addEventListener('submit', async function(e) {
     e.preventDefault();
+
+    // Validate required fields
     const required = this.querySelectorAll('[required]');
     let valid = true;
     required.forEach(f => {
       f.style.borderColor = '';
+      f.style.boxShadow = '';
       if (!f.value.trim()) {
         f.style.borderColor = '#E05252';
         f.style.boxShadow = '0 0 0 3px rgba(224,82,82,0.12)';
@@ -753,10 +762,42 @@
       if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
-    // Show success
-    document.querySelector('.submit-wrap').style.display = 'none';
-    document.getElementById('success-msg').style.display = 'block';
-    document.getElementById('success-msg').scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    // Update button state
+    const btn = this.querySelector('.btn-submit');
+    btn.textContent = '⏳ Enviando...';
+    btn.disabled = true;
+
+    // Collect checkboxes
+    const allowed = [...document.querySelectorAll('[name="allowed"]:checked')].map(c => c.value).join(', ');
+    const sections = [...document.querySelectorAll('[name="sections"]:checked')].map(c => c.value).join(', ');
+
+    // Build form data
+    const data = new FormData(this);
+    if (allowed) data.set('allowed', allowed);
+    if (sections) data.set('sections', sections);
+
+    try {
+      const response = await fetch('https://formspree.io/f/xaqveyop', {
+        method: 'POST',
+        body: data,
+        headers: { 'Accept': 'application/json' }
+      });
+
+      if (response.ok) {
+        document.querySelector('.submit-wrap').style.display = 'none';
+        document.getElementById('success-msg').style.display = 'block';
+        document.getElementById('success-msg').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        btn.textContent = '🏡 Generar Mi Welcome Guide';
+        btn.disabled = false;
+        alert('Hubo un error al enviar. Por favor intenta de nuevo.');
+      }
+    } catch (err) {
+      btn.textContent = '🏡 Generar Mi Welcome Guide';
+      btn.disabled = false;
+      alert('Error de conexión. Verifica tu internet e intenta de nuevo.');
+    }
   });
 </script>
 
